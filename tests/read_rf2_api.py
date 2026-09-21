@@ -1,5 +1,5 @@
 """
-Test & read data from The Iron Wolf's rF2 Shared Memory Tools
+Test & read data from The Iron Wolf's rF2 Shared Memory Plugin interface
 """
 
 from __future__ import annotations
@@ -148,6 +148,28 @@ def test_data(info: rf2_data.SimInfo, player_index, selected_player_index):
     vehicle_model_info(info.RF2Scor, info.RF2Scor.mScoringInfo.mNumVehicles)
 
 
+def test_enum():
+    separator = "-" * 40
+
+    print(separator)
+
+    GAME_PHASE = rf2_enum.enum_map(rf2_enum.rF2GamePhase)
+    SURFACE_TYPE = rf2_enum.enum_map(rf2_enum.rF2SurfaceType)
+    SESSION = rf2_enum.enum_map(rf2_enum.rF2Session)
+
+    print("Enum:")
+    print(rf2_enum.rF2GamePhase(0))
+    print(rf2_enum.rF2SurfaceType(1))
+    print(rf2_enum.rF2Session(7))
+
+    print(separator)
+
+    print("Dict (fast lookup):")
+    print(GAME_PHASE(0))
+    print(SURFACE_TYPE(1))
+    print(SESSION(7))
+
+
 def verify_data(info: rf2_data.SimInfo, player_index):
     separator = "-" * 40
 
@@ -177,5 +199,7 @@ if __name__ == "__main__":
     selected_player_index = player_index
 
     test_data(info, player_index, selected_player_index)
+
+    test_enum()
 
     verify_data(info, selected_player_index)

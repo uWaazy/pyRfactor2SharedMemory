@@ -5,13 +5,8 @@ rF2 API Enums mapping, with fast dict lookup function
 from __future__ import annotations
 
 import enum
-from typing import Callable, Iterable
 
-
-def enum_map(reference: Iterable[enum.Enum], default: str = "Unknown") -> Callable[[int], str]:
-    """Generate lookup mapping from enum"""
-    data = {d.value: d.name for d in reference}
-    return lambda index: data.get(index, default)
+from ._common import enum_map
 
 
 class SubscribedBuffer(enum.Flag):
@@ -252,26 +247,3 @@ class rF2TrackRulesStage(enum.Enum):
     CautionInit = 3      # initialization of a full-course yellow
     CautionUpdate = 4    # update of a full-course yellow
     Maximum = 5          # should be last
-
-
-def test():
-    """Wrap enums into fast lookup dict, returns enum string name"""
-    GAME_PHASE = enum_map(rF2GamePhase)
-    SURFACE_TYPE = enum_map(rF2SurfaceType)
-    SESSION = enum_map(rF2Session)
-
-    print("Enum:")
-    print(rF2GamePhase(0))
-    print(rF2SurfaceType(1))
-    print(rF2Session(7))
-
-    print("-"*40)
-
-    print("Dict (fast lookup):")
-    print(GAME_PHASE(0))
-    print(SURFACE_TYPE(1))
-    print(SESSION(7))
-
-
-if __name__ == "__main__":
-    test()

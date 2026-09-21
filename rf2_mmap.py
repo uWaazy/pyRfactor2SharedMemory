@@ -1,7 +1,5 @@
 """
-rF2 Memory Map Control
-
-Inherit Python mapping of The Iron Wolf's rF2 Shared Memory Tools
+rF2 Memory Map Control for accessing The Iron Wolf's rF2 Shared Memory Plugin interface
 
 Memory map control (author: Xiang)
 Cross-platform Linux support (author: Bernat)
@@ -14,31 +12,15 @@ import logging
 import mmap
 import platform
 
-try:
-    from . import rf2_data
-    from .rf2_data import rFactor2Constants
-except ImportError:  # standalone, not package
-    import rf2_data
-    from rf2_data import rFactor2Constants
-
-PLATFORM = platform.system()
-MAX_VEHICLES = rFactor2Constants.MAX_MAPPED_VEHICLES
-INVALID_INDEX = -1
-
-
-def get_root_logger_name():
-    """Get root logger name"""
-    for logger_name in logging.root.manager.loggerDict:
-        return logger_name
-    return __name__
-
+from . import rf2_data
+from ._common import get_root_logger_name
 
 logger = logging.getLogger(get_root_logger_name())
 
 
 def platform_mmap(name: str, size: int, pid: str = "") -> mmap.mmap:
     """Platform memory mapping"""
-    if PLATFORM == "Windows":
+    if platform.system() == "Windows":
         return windows_mmap(name, size, pid)
     return linux_mmap(name, size)
 
@@ -135,40 +117,3 @@ class MMapControl:
         # Copy if data version changed
         if self.data.mVersionUpdateEnd != self._version.mVersionUpdateEnd == self._version.mVersionUpdateBegin:
             self._buffer[:] = self._mmap_buffer
-
-
-def test_api():
-    """API test run"""
-    # Add logger
-    test_handler = logging.StreamHandler()
-    logger.setLevel(logging.INFO)
-    logger.addHandler(test_handler)
-
-    # Test run
-    SEPARATOR = "=" * 50
-    print("Test API - Start")
-    scoring = MMapControl(rFactor2Constants.MM_SCORING_FILE_NAME, rf2_data.rF2Scoring)
-    scoring.create(1)
-    telemetry = MMapControl(rFactor2Constants.MM_TELEMETRY_FILE_NAME, rf2_data.rF2Telemetry)
-    telemetry.create(1)
-    extended = MMapControl(rFactor2Constants.MM_EXTENDED_FILE_NAME, rf2_data.rF2Extended)
-    extended.create(1)
-
-    print(SEPARATOR)
-    print("Test API - Read")
-    version = extended.data.mVersion.decode()
-    track = scoring.data.mScoringInfo.mTrackName.decode(encoding="iso-8859-1")
-    vehicles = telemetry.data.mNumVehicles
-    print(f"plugin ver: {version if version else 'not running'}")
-    print(f"track name: {track if version else 'not running'}")
-    print(f"total cars: {vehicles if version else 'not running'}")
-
-    print(SEPARATOR)
-    print("Test API - Close")
-    scoring.close()
-    telemetry.close()
-    extended.close()
-
-
-if __name__ == "__main__":
-    test_api()
