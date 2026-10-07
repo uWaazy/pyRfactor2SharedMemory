@@ -1,10 +1,8 @@
 """
-rF2 Memory Map Control
+rF2 Memory Map Control for accessing The Iron Wolf's rF2 Shared Memory Plugin interface
 
-Inherit Python mapping of The Iron Wolf's rF2 Shared Memory Tools
-
-Memory map control (by S.Victor)
-Cross-platform Linux support (by Bernat)
+Memory map control (author: Xiang)
+Cross-platform Linux support (author: Bernat)
 """
 
 from __future__ import annotations
@@ -14,31 +12,15 @@ import logging
 import mmap
 import platform
 
-try:
-    from . import rF2data
-    from .rF2data import rFactor2Constants
-except ImportError:  # standalone, not package
-    import rF2data
-    from rF2data import rFactor2Constants
-
-PLATFORM = platform.system()
-MAX_VEHICLES = rFactor2Constants.MAX_MAPPED_VEHICLES
-INVALID_INDEX = -1
-
-
-def get_root_logger_name():
-    """Get root logger name"""
-    for logger_name in logging.root.manager.loggerDict:
-        return logger_name
-    return __name__
-
+from . import rf2_data
+from ._common import get_root_logger_name
 
 logger = logging.getLogger(get_root_logger_name())
 
 
 def platform_mmap(name: str, size: int, pid: str = "") -> mmap.mmap:
     """Platform memory mapping"""
-    if PLATFORM == "Windows":
+    if platform.system() == "Windows":
         return windows_mmap(name, size, pid)
     return linux_mmap(name, size)
 
@@ -61,13 +43,13 @@ class MMapControl:
     """Memory map control"""
 
     __slots__ = (
-        "_mmap_name",
-        "_mmap_buffer",
-        "_struct",
         "_buffer",
+        "_mmap_buffer",
+        "_mmap_name",
+        "_struct",
         "_version",
-        "update",
         "data",
+        "update",
     )
 
     def __init__(self, mmap_name: str, data_struct: ctypes.Structure) -> None:
@@ -77,10 +59,10 @@ class MMapControl:
             mmap_name: mmap filename, ex. $rFactor2SMMP_Scoring$.
             data_struct: ctypes data structure, ex. rF2data.rF2Scoring.
         """
-        self._mmap_name = mmap_name
-        self._mmap_buffer = None
-        self._struct = data_struct
         self._buffer = bytearray()
+        self._mmap_buffer = None
+        self._mmap_name = mmap_name
+        self._struct = data_struct
         self._version = None
         self.update = None
         self.data = None
@@ -107,7 +89,7 @@ class MMapControl:
         else:
             self._buffer[:] = self._mmap_buffer
             self.data = self._struct.from_buffer(self._buffer)
-            self._version = rF2data.rF2MappedBufferVersionBlock.from_buffer(self._mmap_buffer)
+            self._version = rf2_data.rF2MappedBufferVersionBlock.from_buffer(self._mmap_buffer)
             self.update = self.__buffer_copy
 
         mode = "Direct" if access_mode else "Copy"
@@ -135,40 +117,3 @@ class MMapControl:
         # Copy if data version changed
         if self.data.mVersionUpdateEnd != self._version.mVersionUpdateEnd == self._version.mVersionUpdateBegin:
             self._buffer[:] = self._mmap_buffer
-
-
-def test_api():
-    """API test run"""
-    # Add logger
-    test_handler = logging.StreamHandler()
-    logger.setLevel(logging.INFO)
-    logger.addHandler(test_handler)
-
-    # Test run
-    SEPARATOR = "=" * 50
-    print("Test API - Start")
-    scoring = MMapControl(rFactor2Constants.MM_SCORING_FILE_NAME, rF2data.rF2Scoring)
-    scoring.create(1)
-    telemetry = MMapControl(rFactor2Constants.MM_TELEMETRY_FILE_NAME, rF2data.rF2Telemetry)
-    telemetry.create(1)
-    extended = MMapControl(rFactor2Constants.MM_EXTENDED_FILE_NAME, rF2data.rF2Extended)
-    extended.create(1)
-
-    print(SEPARATOR)
-    print("Test API - Read")
-    version = extended.data.mVersion.decode()
-    track = scoring.data.mScoringInfo.mTrackName.decode(encoding="iso-8859-1")
-    vehicles = telemetry.data.mNumVehicles
-    print(f"plugin ver: {version if version else 'not running'}")
-    print(f"track name: {track if version else 'not running'}")
-    print(f"total cars: {vehicles if version else 'not running'}")
-
-    print(SEPARATOR)
-    print("Test API - Close")
-    scoring.close()
-    telemetry.close()
-    extended.close()
-
-
-if __name__ == "__main__":
-    test_api()
